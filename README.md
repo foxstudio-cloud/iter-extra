@@ -1,5 +1,8 @@
 # iter-extra
 
+[![https://crates.io/crates/iter-extra](https://img.shields.io/crates/v/iter-extra)](https://crates.io/crates/iter-extra)
+[![https://docs.rs/crate/iter-extra/latest](https://img.shields.io/docsrs/iter-extra)](https://docs.rs/crate/iter-extra/latest)
+
 A Rust crate providing additional iterator methods for working with partial ordering, particularly useful when dealing with floating-point numbers and other types that implement `PartialOrd` but not `Ord`.
 
 ## Features
@@ -27,14 +30,10 @@ use iter_extra::prelude::*;
 // Basic usage with floating-point numbers
 let numbers = vec![3.2, 1.5, 2.8, 0.9];
 assert_eq!(numbers.iter().min_by_partial_key(|&x| x), Some(&0.9));
-
-let max = numbers.iter().max_by_partial_key(|&x| x);
 assert_eq!(numbers.iter().max_by_partial_key(|&x| x), Some(&3.2));
 
 // Works with NaN values
-let with_nan = vec![1.0, f64::NAN, 2.0, 0.5];
-let min = with_nan.iter().min_by_partial_key(|&x| x);
-assert_eq!(min, Some(&0.5));
+assert_eq!(numbers.iter().min_by_partial_key(|&x| x), Some(&0.5));
 ```
 
 ## License
