@@ -1,3 +1,103 @@
+pub struct Deltas<I: Iterator> {
+    pub(crate) items: Vec<(I::Item, usize)>,
+    pub(crate) enumerate_iter: std::iter::Enumerate<I>,
+}
+
+impl<I: Iterator> Deltas<I> {
+    pub(crate) fn new(iter: I) -> Self {
+        Deltas {
+            items: Vec::new(),
+            enumerate_iter: iter.enumerate(),
+        }
+    }
+}
+
+impl<I: Iterator> Iterator for Deltas<I>
+where
+    I::Item: std::cmp::PartialEq,
+{
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (next_index, next_item) = self.enumerate_iter.next()?;
+
+        let last_index = (self.items.iter().rev())
+            .find_map(|(item, index)| (item == &next_item).then_some(*index));
+
+        self.items.push((next_item, next_index));
+        Some(last_index.map_or(next_index, |last_idx| next_index - last_idx - 1))
+    }
+}
+
+pub struct DeltasBy<I: Iterator, F> {
+    items: Vec<(I::Item, usize)>,
+    enumerate_iter: std::iter::Enumerate<I>,
+    cmp_fn: F,
+}
+
+impl<I: Iterator, F> DeltasBy<I, F> {
+    pub(crate) fn new(iter: I, cmp_fn: F) -> Self {
+        DeltasBy {
+            items: Vec::new(),
+            enumerate_iter: iter.enumerate(),
+            cmp_fn,
+        }
+    }
+}
+
+impl<I: Iterator, F> Iterator for DeltasBy<I, F>
+where
+    F: FnMut(&I::Item, &I::Item) -> std::cmp::Ordering,
+{
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (next_index, next_item) = self.enumerate_iter.next()?;
+
+        let last_index = (self.items.iter().rev()).find_map(|(item, index)| {
+            ((self.cmp_fn)(item, &next_item) == std::cmp::Ordering::Equal).then_some(*index)
+        });
+
+        self.items.push((next_item, next_index));
+        Some(last_index.map_or(next_index, |last_idx| next_index - last_idx - 1))
+    }
+}
+
+pub struct DeltasByKey<I: Iterator, F> {
+    items: Vec<(I::Item, usize)>,
+    enumerate_iter: std::iter::Enumerate<I>,
+    key_fn: F,
+}
+
+impl<I: Iterator, F> DeltasByKey<I, F> {
+    pub(crate) fn new(iter: I, key_fn: F) -> Self {
+        DeltasByKey {
+            items: Vec::new(),
+            enumerate_iter: iter.enumerate(),
+            key_fn,
+        }
+    }
+}
+
+impl<I: Iterator, K, F> Iterator for DeltasByKey<I, F>
+where
+    F: FnMut(&I::Item) -> K,
+    K: std::cmp::PartialEq,
+{
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (next_index, next_item) = self.enumerate_iter.next()?;
+
+        let next_key = (self.key_fn)(&next_item);
+        let last_index = (self.items.iter().rev())
+            .find_map(|(item, index)| ((self.key_fn)(item) == next_key).then_some(*index));
+
+        self.items.push((next_item, next_index));
+        Some(last_index.map_or(next_index, |last_idx| next_index - last_idx - 1))
+    }
+}
+
 pub trait IterExtra: Iterator {
     /// Returns the element that gives the minimum value from the specified function.
     ///
@@ -83,6 +183,62 @@ pub trait IterExtra: Iterator {
                 .partial_cmp(&key(y))
                 .unwrap_or(std::cmp::Ordering::Equal)
         })
+    }
+
+    fn collect_some_vec(self) -> Option<Vec<Self::Item>>
+    where
+        Self: Sized,
+    {
+        Some(self.collect::<Vec<Self::Item>>()).filter(|v| !v.is_empty())
+    }
+
+    fn collect_ok_vec_or<E>(self, err: E) -> Result<Vec<Self::Item>, E>
+    where
+        Self: Sized,
+    {
+        Ok(self.collect::<Vec<Self::Item>>()).and_then(
+            |v| {
+                if v.is_empty() { Err(err) } else { Ok(v) }
+            },
+        )
+    }
+
+    fn collect_ok_vec_or_default<E: Default>(self) -> Result<Vec<Self::Item>, E>
+    where
+        Self: Sized,
+    {
+        Ok(self.collect::<Vec<Self::Item>>()).and_then(|v| {
+            if v.is_empty() {
+                Err(E::default())
+            } else {
+                Ok(v)
+            }
+        })
+    }
+
+    fn deltas(self) -> Deltas<Self>
+    where
+        Self: Sized,
+        Self::Item: std::cmp::PartialEq,
+    {
+        Deltas::new(self)
+    }
+
+    fn deltas_by<F>(self, cmp_fn: F) -> DeltasBy<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item, &Self::Item) -> std::cmp::Ordering,
+    {
+        DeltasBy::new(self, cmp_fn)
+    }
+
+    fn deltas_by_key<K, F>(self, key_fn: F) -> DeltasByKey<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> K,
+        K: std::cmp::PartialEq,
+    {
+        DeltasByKey::new(self, key_fn)
     }
 }
 
