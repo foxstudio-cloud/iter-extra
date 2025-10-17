@@ -7,7 +7,7 @@ Additional iterator methods for Rust. Provides utilities for partial ordering, d
 
 ```toml
 [dependencies]
-iter-extra = "0.2.1"
+iter-extra = "0.2.2"
 ```
 
 ```rust

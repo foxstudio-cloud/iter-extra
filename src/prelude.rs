@@ -231,9 +231,9 @@ pub trait IterExtra: Iterator {
     /// ```
     /// use iter_extra::IterExtra;
     ///
-    /// let items = vec!['a', 'b', 'c', 'a', 'b'];
+    /// let items = vec!['a', 'b', 'c', 'a', 'c'];
     /// let deltas: Vec<usize> = items.into_iter().deltas().collect();
-    /// assert_eq!(deltas, vec![0, 0, 0, 2, 2]);
+    /// assert_eq!(deltas, vec![0, 1, 2, 2, 1]);
     /// ```
     fn deltas(self) -> Deltas<Self>
     where
@@ -266,7 +266,7 @@ pub trait IterExtra: Iterator {
     /// let deltas: Vec<usize> = items.into_iter()
     ///     .deltas_by(|a, b| a.floor().total_cmp(&b.floor()))
     ///     .collect();
-    /// assert_eq!(deltas, vec![0, 0, 0, 2, 2]);
+    /// assert_eq!(deltas, vec![0, 1, 2, 2, 2]);
     /// ```
     fn deltas_by<F>(self, cmp_fn: F) -> DeltasBy<Self, F>
     where
@@ -299,7 +299,7 @@ pub trait IterExtra: Iterator {
     /// let deltas: Vec<usize> = items.into_iter()
     ///     .deltas_by_key(|s| s.chars().next())
     ///     .collect();
-    /// assert_eq!(deltas, vec![0, 0, 1, 1]);
+    /// assert_eq!(deltas, vec![0, 1, 1, 1]);
     /// ```
     fn deltas_by_key<K, F>(self, key_fn: F) -> DeltasByKey<Self, F>
     where
