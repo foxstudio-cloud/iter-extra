@@ -216,6 +216,25 @@ pub trait IterExtra: Iterator {
         })
     }
 
+    /// Returns an iterator that yields the distance from each element to its last occurrence.
+    ///
+    /// For each element in the iterator, this method returns the number of elements between
+    /// the current element and the previous occurrence of the same element. If the element
+    /// hasn't appeared before, it returns the current index.
+    ///
+    /// # Returns
+    ///
+    /// An iterator that yields `usize` values representing the delta for each element
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_extra::IterExtra;
+    ///
+    /// let items = vec!['a', 'b', 'c', 'a', 'b'];
+    /// let deltas: Vec<usize> = items.into_iter().deltas().collect();
+    /// assert_eq!(deltas, vec![0, 0, 0, 2, 2]);
+    /// ```
     fn deltas(self) -> Deltas<Self>
     where
         Self: Sized,
@@ -224,6 +243,31 @@ pub trait IterExtra: Iterator {
         Deltas::new(self)
     }
 
+    /// Returns an iterator that yields the distance from each element to its last occurrence,
+    /// using a custom comparison function.
+    ///
+    /// Similar to `deltas`, but uses a custom comparison function to determine element equality.
+    /// Two elements are considered equal when the comparison function returns `Ordering::Equal`.
+    ///
+    /// # Arguments
+    ///
+    /// * `cmp_fn` - A function that compares two elements and returns an `Ordering`
+    ///
+    /// # Returns
+    ///
+    /// An iterator that yields `usize` values representing the delta for each element
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_extra::IterExtra;
+    ///
+    /// let items = vec![1.1, 2.2, 3.3, 1.2, 2.1];
+    /// let deltas: Vec<usize> = items.into_iter()
+    ///     .deltas_by(|a, b| a.floor().total_cmp(&b.floor()))
+    ///     .collect();
+    /// assert_eq!(deltas, vec![0, 0, 0, 2, 2]);
+    /// ```
     fn deltas_by<F>(self, cmp_fn: F) -> DeltasBy<Self, F>
     where
         Self: Sized,
@@ -232,6 +276,31 @@ pub trait IterExtra: Iterator {
         DeltasBy::new(self, cmp_fn)
     }
 
+    /// Returns an iterator that yields the distance from each element to its last occurrence,
+    /// comparing elements by a key extracted from each element.
+    ///
+    /// Similar to `deltas`, but determines element equality by comparing the keys extracted
+    /// by the provided key function. Two elements are considered equal if their keys are equal.
+    ///
+    /// # Arguments
+    ///
+    /// * `key_fn` - A function that extracts a key from each element for comparison
+    ///
+    /// # Returns
+    ///
+    /// An iterator that yields `usize` values representing the delta for each element
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use iter_extra::IterExtra;
+    ///
+    /// let items = vec!["apple", "banana", "apricot", "blueberry"];
+    /// let deltas: Vec<usize> = items.into_iter()
+    ///     .deltas_by_key(|s| s.chars().next())
+    ///     .collect();
+    /// assert_eq!(deltas, vec![0, 0, 1, 1]);
+    /// ```
     fn deltas_by_key<K, F>(self, key_fn: F) -> DeltasByKey<Self, F>
     where
         Self: Sized,
